@@ -12,14 +12,14 @@ print_message() {
 # DATA_P is path to folder where your data is stored
 # OUTPUT_P is path to folder where your output will be stored 
 DATA_P="/Users/sudarshan/Documents/Jonathan/data/data1"
-OUTPUT_P="/Users/sudarshan/Documents/Jonathan/outputs/nt3"
+OUTPUT_P="/Users/sudarshan/Documents/Jonathan/outputs/reg"
 
 # *CHANGE* Change the filename and TEs!
 # Define the echos and TEs by adding the file name and times
 # If you set up the DATA_P correctly shouldn't need anything but the file name!
 ECHO1="$DATA_P/Multigre_SAGE_e1_tshift_bet.nii.gz"
-ECHO2="$DATA_P/Multigre_SAGE_e4_tshift_bet.nii.gz"
-ECHO3="$DATA_P/Multigre_SAGE_e4_tshift_bet.nii.gz"
+ECHO2="$DATA_P/Multigre_SAGE_e2_tshift_bet.nii.gz"
+ECHO3="$DATA_P/Multigre_SAGE_e3_tshift_bet.nii.gz"
 ECHO4="$DATA_P/Multigre_SAGE_e4_tshift_bet.nii.gz"
 ECHO5="$DATA_P/Multigre_SAGE_e5_tshift_bet.nii.gz"
 TE="7.3 26.4 57.5 76.6 95.7"
@@ -52,5 +52,5 @@ echo "Mask File: $MASK"
 # Here is where we actually execute tedana
 # Line 55 is the one that is actually taking all the variables and running the sage-tedana!
 print_message "Executing tedana"
-tedana -d $ECHO1 $ECHO2 $ECHO3 $ECHO4 $ECHO5 -e $TE --out-dir $OUTPUT_P --mask $MASK
+tedana -d $ECHO1 $ECHO2 $ECHO3 $ECHO4 $ECHO5 -e $TE --out-dir $OUTPUT_P --mask $MASK --overwrite
 print_message "done."

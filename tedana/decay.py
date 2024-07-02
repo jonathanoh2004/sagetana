@@ -192,47 +192,11 @@ def fit_monoexponential(data_cat, echo_times, adaptive_mask, report=True):
 
     return t2s_limited, s0_limited, t2s_full, s0_full
 
-
+# Goal is to have this part return all the data I need and whatever gets this data can have a sage and non sage version
+# Or maybe i just copy this and have a different method for sage
 def fit_loglinear(data_cat, echo_times, adaptive_mask, report=True):
-    """Fit monoexponential decay model with log-linear regression.
-
-    The monoexponential decay function is fitted to all values for a given
-    voxel across TRs, per TE, to estimate voxel-wise :math:`S_0` and :math:`T_2^*`.
-    At a given voxel, only those echoes with "good signal", as indicated by the
-    value of the voxel in the adaptive mask, are used.
-    Therefore, for a voxel with an adaptive mask value of five, the first five
-    echoes would be used to estimate T2* and S0.
-
-    Parameters
-    ----------
-    data_cat : (S x E x T) :obj:`numpy.ndarray`
-        Multi-echo data. S is samples, E is echoes, and T is timepoints.
-    echo_times : (E,) array_like
-        Echo times in milliseconds.
-    adaptive_mask : (S,) :obj:`numpy.ndarray`
-        Array where each value indicates the number of echoes with good signal
-        for that voxel. This mask may be thresholded; for example, with values
-        less than 3 set to 0.
-        For more information on thresholding, see `make_adaptive_mask`.
-    report : :obj:`bool`, optional
-        Whether to log a description of this step or not. Default is True.
-
-    Returns
-    -------
-    t2s_limited, s0_limited, t2s_full, s0_full : (S,) :obj:`numpy.ndarray`
-        T2* and S0 estimate maps.
-
-    Notes
-    -----
-    The approach used in this function involves transforming the raw signal values
-    (:math:`log(|data| + 1)`) and then fitting a line to the transformed data using
-    ordinary least squares.
-    This results in two parameter estimates: one for the slope  and one for the intercept.
-    The slope estimate is inverted (i.e., 1 / slope) to get  :math:`T_2^*`,
-    while the intercept estimate is exponentiated (i.e., e^intercept) to get :math:`S_0`.
-
-    This method is faster, but less accurate, than the nonlinear approach.
-    """
+    """Fit monoexponential decay model with log-linear regression."""
+    
     if report:
         RepLGR.info(
             "A monoexponential model was fit to the data at each voxel "
@@ -241,9 +205,10 @@ def fit_loglinear(data_cat, echo_times, adaptive_mask, report=True):
             "used to determine which echoes would be used to estimate T2* "
             "and S0."
         )
+    
     n_samp, n_echos, n_vols = data_cat.shape
-
     echos_to_run = np.unique(adaptive_mask)
+
     # When there is one good echo, use two
     if 1 in echos_to_run:
         echos_to_run = np.sort(np.unique(np.append(echos_to_run, 2)))
@@ -266,34 +231,99 @@ def fit_loglinear(data_cat, echo_times, adaptive_mask, report=True):
         echo_mask[adaptive_mask == echo_num] = True
         echo_masks[..., i_echo] = echo_mask
 
-        # perform log linear fit of echo times against MR signal
-        # make DV matrix: samples x (time series * echos)
+
         data_2d = data_cat[voxel_idx, :echo_num, :].reshape(len(voxel_idx), -1).T
         log_data = np.log(np.abs(data_2d) + 1)
 
-        # make IV matrix: intercept/TEs x (time series * echos)
-        x = np.column_stack([np.ones(echo_num), [-te for te in echo_times[:echo_num]]])
+        # Use _get_ind_vars to generate the IV matrix
+        x = _get_ind_vars(echo_times[:echo_num])
         iv_arr = np.repeat(x, n_vols, axis=0)
 
-        # Log-linear fit
+        if iv_arr.shape[0] != log_data.shape[0]:
+            raise ValueError(f"Dimension mismatch: iv_arr shape {iv_arr.shape}, log_data shape {log_data.shape}")
+
         betas = np.linalg.lstsq(iv_arr, log_data, rcond=None)[0]
-        t2s = 1.0 / betas[1, :].T
-        s0 = np.exp(betas[0, :]).T
+        betas[~np.isfinite(betas)] = 0
 
-        t2s_asc_maps[voxel_idx, i_echo] = t2s
-        s0_asc_maps[voxel_idx, i_echo] = s0
+        s0_I_map = np.exp(betas[0, :]).T
+        delta_map = np.exp(betas[1, :]).T
+        s0_II_map = s0_I_map / delta_map
+        t2star_map = 1 / betas[2, :].T
+        t2_map = 1 / betas[3, :].T
 
-    # create limited T2* and S0 maps
+        # if n_vols > 1:
+        #     s0_I_map = s0_I_map.reshape(n_samp, n_vols)
+        #     s0_II_map = s0_II_map.reshape(n_samp, n_vols)
+        #     delta_map = delta_map.reshape(n_samp, n_vols)
+        #     t2star_map = t2star_map.reshape(n_samp, n_vols)
+        #     t2_map = t2_map.reshape(n_samp, n_vols)
+
+        t2s_asc_maps[voxel_idx, i_echo] = t2star_map
+        s0_asc_maps[voxel_idx, i_echo] = s0_I_map
+
     t2s_limited = utils.unmask(t2s_asc_maps[echo_masks], adaptive_mask > 1)
     s0_limited = utils.unmask(s0_asc_maps[echo_masks], adaptive_mask > 1)
 
-    # create full T2* maps with S0 estimation errors
     t2s_full, s0_full = t2s_limited.copy(), s0_limited.copy()
     t2s_full[adaptive_mask == 1] = t2s_asc_maps[adaptive_mask == 1, 0]
     s0_full[adaptive_mask == 1] = s0_asc_maps[adaptive_mask == 1, 0]
 
+    # going to want to change the return statements for these ones.
     return t2s_limited, s0_limited, t2s_full, s0_full
 
+# depending on how many good echos we have do math accordingly.
+def _get_ind_vars(tes):
+    if len(tes) == 2:
+        tese = tes[-1]
+        x_s0_I = np.ones(len(tes))
+        x_delta = np.array([0, 0])
+        x_r2star = np.array([
+                            -1 * tes[0],
+                            -1 * tes[1]
+                            ])
+        x_r2 = np.array([0, 0])
+
+    elif len(tes) == 3:
+        tese = tes[-1]
+        x_s0_I = np.ones(len(tes))
+        x_delta = np.array([0, 0, -1])
+        x_r2star = np.array([
+                            -1 * tes[0],
+                            -1 * tes[1],
+                            tes[2] - tese
+                            ])
+        x_r2 = np.array([0, 0, tese - (2 * tes[2])])
+
+    elif len(tes) == 4:
+        tese = tes[-1]
+        x_s0_I = np.ones(len(tes))
+        x_delta = np.array([0, 0, -1, -1])
+        x_r2star = np.array([
+                            -1 * tes[0],
+                            -1 * tes[1],
+                            tes[2] - tese,
+                            tes[3] - tese
+                            ])
+        x_r2 = np.array([0, 0, tese - (2 * tes[2]), tese - (2 * tes[3])])
+
+    elif len(tes) == 5:
+        tese = tes[-1]
+        x_s0_I = np.ones(len(tes))
+        x_delta = np.array([0, 0, -1, -1, -1])
+        x_r2star = np.array([
+                            -1 * tes[0],
+                            -1 * tes[1],
+                            tes[2] - tese,
+                            tes[3] - tese, 
+                            0
+                            ])
+        x_r2 = np.array([0, 0, tese - (2 * tes[2]), tese - (2 * tes[3]), -1 * tese])
+
+    else:
+        raise ValueError("Unexpected number of echo times.")
+
+    X = np.column_stack([x_s0_I, x_delta, x_r2star, x_r2])
+    return X
 
 def fit_decay(data, tes, mask, adaptive_mask, fittype, report=True):
     """Fit voxel-wise monoexponential decay models to ``data``.
