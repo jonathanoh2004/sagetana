@@ -12,7 +12,7 @@ print_message() {
 # DATA_P is path to folder where your data is stored
 # OUTPUT_P is path to folder where your output will be stored 
 DATA_P="/Users/sudarshan/Documents/Jonathan/data/data1"
-OUTPUT_P="/Users/sudarshan/Documents/Jonathan/outputs/reg"
+OUTPUT_P="/Users/sudarshan/Documents/Jonathan/outputs/nt4"
 
 # *CHANGE* Change the filename and TEs!
 # Define the echos and TEs by adding the file name and times
@@ -52,5 +52,5 @@ echo "Mask File: $MASK"
 # Here is where we actually execute tedana
 # Line 55 is the one that is actually taking all the variables and running the sage-tedana!
 print_message "Executing tedana"
-tedana -d $ECHO1 $ECHO2 $ECHO3 $ECHO4 $ECHO5 -e $TE --out-dir $OUTPUT_P --mask $MASK --overwrite
+tedana -d $ECHO1 $ECHO2 $ECHO3 $ECHO4 $ECHO5 -e $TE --out-dir $OUTPUT_P --mask $MASK --overwrite --sage
 print_message "done."

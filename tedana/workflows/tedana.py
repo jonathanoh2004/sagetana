@@ -76,6 +76,17 @@ def _get_parser():
         help="Echo times (in ms). E.g., 15.0 39.0 63.0",
         required=True,
     )
+
+    optional.add_argument(
+        "--sage",
+        dest="sage",
+        action="store_true",
+        help=(
+            "Keeps track of whether or not processes should be ran through sage or not"
+        ),
+        default=False,
+    )
+
     optional.add_argument(
         "--out-dir",
         dest="out_dir",
@@ -326,6 +337,7 @@ def _get_parser():
 def tedana_workflow(
     data,
     tes,
+    sage=False,
     out_dir=".",
     mask=None,
     convention="bids",
@@ -633,8 +645,9 @@ def tedana_workflow(
 
     if t2smap is None:
         LGR.info("Computing T2* map")
+       
         t2s_limited, s0_limited, t2s_full, s0_full = decay.fit_decay(
-            catd, tes, mask_denoise, masksum_denoise, fittype
+            catd, tes, mask_denoise, masksum_denoise, fittype, sage
         )
 
         # set a hard cap for the T2* map
