@@ -215,7 +215,11 @@ def fit_loglinear(data_cat, echo_times, adaptive_mask, report=True):
     echos_to_run = echos_to_run[echos_to_run >= 2]
 
     t2s_asc_maps = np.zeros([n_samp, len(echos_to_run)])
-    s0_asc_maps = np.zeros([n_samp, len(echos_to_run)])
+    s01_asc_maps = np.zeros([n_samp, len(echos_to_run)])
+    s02_asc_maps = np.zeros([n_samp, len(echos_to_run)])
+    t2_asc_maps = np.zeros([n_samp, len(echos_to_run)])
+    delta_asc_maps = np.zeros([n_samp, len(echos_to_run)])
+
     echo_masks = np.zeros([n_samp, len(echos_to_run)], dtype=bool)
 
     for i_echo, echo_num in enumerate(echos_to_run):
@@ -259,17 +263,35 @@ def fit_loglinear(data_cat, echo_times, adaptive_mask, report=True):
         #     t2_map = t2_map.reshape(n_samp, n_vols)
 
         t2s_asc_maps[voxel_idx, i_echo] = t2star_map
-        s0_asc_maps[voxel_idx, i_echo] = s0_I_map
+        s01_asc_maps[voxel_idx, i_echo] = s0_I_map
+        s02_asc_maps[voxel_idx, i_echo] = s0_II_map
+        t2_asc_maps[voxel_idx, i_echo] = t2_map
+        delta_asc_maps[voxel_idx, i_echo] = delta_map
+        
+        
+
 
     t2s_limited = utils.unmask(t2s_asc_maps[echo_masks], adaptive_mask > 1)
-    s0_limited = utils.unmask(s0_asc_maps[echo_masks], adaptive_mask > 1)
+    s01_limited = utils.unmask(s01_asc_maps[echo_masks], adaptive_mask > 1)
+    s02_limited = utils.unmask(s02_asc_maps[echo_masks], adaptive_mask > 1)
+    t2_limited = utils.unmask(t2_asc_maps[echo_masks], adaptive_mask > 1)
+    delta_limited = utils.unmask(delta_asc_maps[echo_masks], adaptive_mask > 1)
 
-    t2s_full, s0_full = t2s_limited.copy(), s0_limited.copy()
+    t2s_full, s01_full, s02_full, t2_full, delta_full = (
+                                                            t2s_limited.copy(), 
+                                                            s01_limited.copy(), 
+                                                            s02_limited.copy(), 
+                                                            t2_limited.copy(), 
+                                                            delta_limited.copy()
+                                                         )
     t2s_full[adaptive_mask == 1] = t2s_asc_maps[adaptive_mask == 1, 0]
-    s0_full[adaptive_mask == 1] = s0_asc_maps[adaptive_mask == 1, 0]
+    s01_full[adaptive_mask == 1] = s01_asc_maps[adaptive_mask == 1, 0]
+    s02_full[adaptive_mask == 1] = s02_asc_maps[adaptive_mask == 1, 0]
+    t2_full[adaptive_mask == 1] = t2_asc_maps[adaptive_mask == 1, 0]
+    delta_full[adaptive_mask == 1] = delta_asc_maps[adaptive_mask == 1, 0]
 
     # going to want to change the return statements for these ones.
-    return t2s_limited, s0_limited, t2s_full, s0_full
+    return t2s_limited, s01_limited, t2s_full, s01_full
 
 # depending on how many good echos we have do math accordingly.
 def _get_ind_vars(tes):
