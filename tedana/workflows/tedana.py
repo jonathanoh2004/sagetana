@@ -645,10 +645,14 @@ def tedana_workflow(
 
     if t2smap is None:
         LGR.info("Computing T2* map")
-       
-        t2s_limited, s0_limited, t2s_full, s0_full = decay.fit_decay(
-            catd, tes, mask_denoise, masksum_denoise, fittype, sage
-        )
+        if not sage:
+            t2s_limited, s0_limited, t2s_full, s0_full = decay.fit_decay(
+                catd, tes, mask_denoise, masksum_denoise, fittype, sage
+            )
+        else:
+            t2s_limited, s0_limited, s02_limited, t2_limited, delta_limited, t2s_full, s0_full, s02_full, t2_full, delta_full = decay.fit_decay(
+                catd, tes, mask_denoise, masksum_denoise, fittype, sage
+            )
 
         # set a hard cap for the T2* map
         # anything that is 10x higher than the 99.5 %ile will be reset to 99.5 %ile

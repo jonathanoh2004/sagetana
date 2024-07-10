@@ -201,7 +201,6 @@ def fit_loglinear(data_cat, echo_times, adaptive_mask, sage, report=True):
         print("This is the standard NON-SAGE Linear Fitting")
         print("############################################")
         """Fit monoexponential decay model with log-linear regression.
-
         The monoexponential decay function is fitted to all values for a given
         voxel across TRs, per TE, to estimate voxel-wise :math:`S_0` and :math:`T_2^*`.
         At a given voxel, only those echoes with "good signal", as indicated by the
@@ -399,7 +398,7 @@ def fit_loglinear(data_cat, echo_times, adaptive_mask, sage, report=True):
         delta_full[adaptive_mask == 1] = delta_asc_maps[adaptive_mask == 1, 0]
 
         # going to want to change the return statements for these ones.
-        return t2s_limited, s01_limited, t2s_full, s01_full
+        return t2s_limited, s01_limited, s02_limited, t2_limited, delta_limited, t2s_full, s01_full, s02_full, t2_full, delta_full
 
 # depending on how many good echos we have do math accordingly.
 def _get_ind_vars(tes):
@@ -527,9 +526,15 @@ def fit_decay(data, tes, mask, adaptive_mask, fittype, sage, report=True):
     adaptive_mask_masked = adaptive_mask[mask]
 
     if fittype == "loglin":
-        t2s_limited, s0_limited, t2s_full, s0_full = fit_loglinear(
-            data_masked, tes, adaptive_mask_masked, sage, report=report
-        )
+        if not sage:
+            t2s_limited, s0_limited, t2s_full, s0_full = fit_loglinear(
+                data_masked, tes, adaptive_mask_masked, sage, report=report
+            )
+        else:
+            t2s_limited, s0_limited, s02_limited, t2_limited, delta_limited, t2s_full, s0_full, s02_full, t2_full, delta_full = fit_loglinear(
+                data_masked, tes, adaptive_mask_masked, sage, report=report
+            )
+
     elif fittype == "curvefit":
         t2s_limited, s0_limited, t2s_full, s0_full = fit_monoexponential(
             data_masked, tes, adaptive_mask_masked, report=report
@@ -538,7 +543,6 @@ def fit_decay(data, tes, mask, adaptive_mask, fittype, sage, report=True):
         raise ValueError(f"Unknown fittype option: {fittype}")
 
     t2s_limited[np.isinf(t2s_limited)] = 500.0  # why 500?
-    # let's get rid of negative values, but keep zeros where limited != full
     t2s_limited[(adaptive_mask_masked > 1) & (t2s_limited <= 0)] = 1.0
     t2s_limited = _apply_t2s_floor(t2s_limited, tes)
     s0_limited[np.isnan(s0_limited)] = 0.0  # why 0?
@@ -547,10 +551,29 @@ def fit_decay(data, tes, mask, adaptive_mask, fittype, sage, report=True):
     t2s_full = _apply_t2s_floor(t2s_full, tes)
     s0_full[np.isnan(s0_full)] = 0.0  # why 0?
 
+    if sage:
+        s02_limited[np.isnan(s02_limited)] = 0.0  # why 0?
+        s02_full[np.isnan(s02_full)] = 0.0  # why 0?
+        t2_limited[np.isinf(t2_limited)] = 500.0  # why 500?
+        t2_limited[(adaptive_mask_masked > 1) & (t2_limited <= 0)] = 1.0  # Avoid negative values
+        delta_limited[np.isnan(delta_limited)] = 0.0  # why 0?
+        t2_full[np.isinf(t2_full)] = 500.0  # why 500?
+        t2_full[t2_full <= 0] = 1.0  # Avoid negative values
+        delta_full[np.isnan(delta_full)] = 0.0  # why 0?
+
+
     t2s_limited = utils.unmask(t2s_limited, mask)
     s0_limited = utils.unmask(s0_limited, mask)
     t2s_full = utils.unmask(t2s_full, mask)
     s0_full = utils.unmask(s0_full, mask)
+
+    if sage:
+        s02_limited = utils.unmask(s02_limited, mask)
+        t2_limited = utils.unmask(t2_limited, mask)
+        delta_limited = utils.unmask(delta_limited, mask)
+        s02_full = utils.unmask(s02_full, mask)
+        t2_full = utils.unmask(t2_full, mask)
+        delta_full = utils.unmask(delta_full, mask)
 
     # set a hard cap for the T2* map
     # anything that is 10x higher than the 99.5 %ile will be reset to 99.5 %ile
@@ -558,7 +581,10 @@ def fit_decay(data, tes, mask, adaptive_mask, fittype, sage, report=True):
     LGR.debug(f"Setting cap on T2* map at {cap_t2s * 10:.5f}")
     t2s_limited[t2s_limited > cap_t2s * 10] = cap_t2s
 
-    return t2s_limited, s0_limited, t2s_full, s0_full
+    if not sage:
+        return t2s_limited, s0_limited, t2s_full, s0_full
+    else:
+        return t2s_limited, s0_limited, s02_limited, t2_limited, delta_limited, t2s_full, s0_full, s02_full, t2_full, delta_full
 
 
 def fit_decay_ts(data, tes, mask, adaptive_mask, fittype):
