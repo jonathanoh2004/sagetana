@@ -192,14 +192,10 @@ def fit_monoexponential(data_cat, echo_times, adaptive_mask, report=True):
 
     return t2s_limited, s0_limited, t2s_full, s0_full
 
-# Goal is to have this part return all the data I need and whatever gets this data can have a sage and non sage version
-# Or maybe i just copy this and have a different method for sage
+
 def fit_loglinear(data_cat, echo_times, adaptive_mask, sage, report=True):
     
     if not sage:
-        print("############################################") 
-        print("This is the standard NON-SAGE Linear Fitting")
-        print("############################################")
         """Fit monoexponential decay model with log-linear regression.
         The monoexponential decay function is fitted to all values for a given
         voxel across TRs, per TE, to estimate voxel-wise :math:`S_0` and :math:`T_2^*`.
@@ -238,6 +234,11 @@ def fit_loglinear(data_cat, echo_times, adaptive_mask, sage, report=True):
 
         This method is faster, but less accurate, than the nonlinear approach.
         """
+
+        print("############################################") 
+        print("This is the standard NON-SAGE Linear Fitting")
+        print("############################################")
+
         if report:
             RepLGR.info(
                 "A monoexponential model was fit to the data at each voxel "
@@ -254,6 +255,7 @@ def fit_loglinear(data_cat, echo_times, adaptive_mask, sage, report=True):
             echos_to_run = np.sort(np.unique(np.append(echos_to_run, 2)))
         echos_to_run = echos_to_run[echos_to_run >= 2]
 
+        #asymptomatic maps
         t2s_asc_maps = np.zeros([n_samp, len(echos_to_run)])
         s0_asc_maps = np.zeros([n_samp, len(echos_to_run)])
         echo_masks = np.zeros([n_samp, len(echos_to_run)], dtype=bool)
@@ -350,12 +352,14 @@ def fit_loglinear(data_cat, echo_times, adaptive_mask, sage, report=True):
             x = _get_ind_vars(echo_times[:echo_num])
             iv_arr = np.repeat(x, n_vols, axis=0)
 
+            # check that we have the right dimension sizes for the independant variable matrix and the log data matrix
             if iv_arr.shape[0] != log_data.shape[0]:
                 raise ValueError(f"Dimension mismatch: iv_arr shape {iv_arr.shape}, log_data shape {log_data.shape}")
 
             betas = np.linalg.lstsq(iv_arr, log_data, rcond=None)[0]
             betas[~np.isfinite(betas)] = 0
 
+            # gather all the other maps from betas
             s0_I_map = np.exp(betas[0, :]).T
             delta_map = np.exp(betas[1, :]).T
             s0_II_map = s0_I_map / delta_map
@@ -377,13 +381,14 @@ def fit_loglinear(data_cat, echo_times, adaptive_mask, sage, report=True):
             
             
 
-
+        # not too sure but I think this part includes values only for voxels with good signal from at least two echoes.
         t2s_limited = utils.unmask(t2s_asc_maps[echo_masks], adaptive_mask > 1)
         s01_limited = utils.unmask(s01_asc_maps[echo_masks], adaptive_mask > 1)
         s02_limited = utils.unmask(s02_asc_maps[echo_masks], adaptive_mask > 1)
         t2_limited = utils.unmask(t2_asc_maps[echo_masks], adaptive_mask > 1)
         delta_limited = utils.unmask(delta_asc_maps[echo_masks], adaptive_mask > 1)
 
+        # and I think this part include values for all voxels, using the first echo's values for voxels with good signal from only one echo.
         t2s_full, s01_full, s02_full, t2_full, delta_full = (
                                                                 t2s_limited.copy(), 
                                                                 s01_limited.copy(), 
@@ -397,10 +402,11 @@ def fit_loglinear(data_cat, echo_times, adaptive_mask, sage, report=True):
         t2_full[adaptive_mask == 1] = t2_asc_maps[adaptive_mask == 1, 0]
         delta_full[adaptive_mask == 1] = delta_asc_maps[adaptive_mask == 1, 0]
 
-        # going to want to change the return statements for these ones.
         return t2s_limited, s01_limited, s02_limited, t2_limited, delta_limited, t2s_full, s01_full, s02_full, t2_full, delta_full
 
 # depending on how many good echos we have do math accordingly.
+# one thing I need to tweak aftering getting the sage pipeline working is getting loglin to use all data points, I think currently
+# it is just working with 2 echos with good signal?
 def _get_ind_vars(tes):
     if len(tes) == 2:
         tese = tes[-1]
@@ -525,6 +531,8 @@ def fit_decay(data, tes, mask, adaptive_mask, fittype, sage, report=True):
     data_masked = data[mask, :, :]
     adaptive_mask_masked = adaptive_mask[mask]
 
+
+    # determine which pipeline to use, sage or non-sage.
     if fittype == "loglin":
         if not sage:
             t2s_limited, s0_limited, t2s_full, s0_full = fit_loglinear(
@@ -542,6 +550,7 @@ def fit_decay(data, tes, mask, adaptive_mask, fittype, sage, report=True):
     else:
         raise ValueError(f"Unknown fittype option: {fittype}")
 
+    # process the T2* and S0 limited maps (non sage stuff)
     t2s_limited[np.isinf(t2s_limited)] = 500.0  # why 500?
     t2s_limited[(adaptive_mask_masked > 1) & (t2s_limited <= 0)] = 1.0
     t2s_limited = _apply_t2s_floor(t2s_limited, tes)
@@ -551,6 +560,7 @@ def fit_decay(data, tes, mask, adaptive_mask, fittype, sage, report=True):
     t2s_full = _apply_t2s_floor(t2s_full, tes)
     s0_full[np.isnan(s0_full)] = 0.0  # why 0?
 
+    # process the additional maps for sage if --sage
     if sage:
         s02_limited[np.isnan(s02_limited)] = 0.0  # why 0?
         s02_full[np.isnan(s02_full)] = 0.0  # why 0?
@@ -561,12 +571,13 @@ def fit_decay(data, tes, mask, adaptive_mask, fittype, sage, report=True):
         t2_full[t2_full <= 0] = 1.0  # Avoid negative values
         delta_full[np.isnan(delta_full)] = 0.0  # why 0?
 
-
+    # unmasks the maps
     t2s_limited = utils.unmask(t2s_limited, mask)
     s0_limited = utils.unmask(s0_limited, mask)
     t2s_full = utils.unmask(t2s_full, mask)
     s0_full = utils.unmask(s0_full, mask)
 
+    # unmasks the maps for sage maps
     if sage:
         s02_limited = utils.unmask(s02_limited, mask)
         t2_limited = utils.unmask(t2_limited, mask)

@@ -644,6 +644,7 @@ def tedana_workflow(
     LGR.debug(f"Retaining {mask_clf.sum()}/{n_samp} samples for classification")
 
     if t2smap is None:
+        # determine how we should call fit_decay
         LGR.info("Computing T2* map")
         if not sage:
             t2s_limited, s0_limited, t2s_full, s0_full = decay.fit_decay(
