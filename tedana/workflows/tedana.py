@@ -659,23 +659,49 @@ def tedana_workflow(
         # anything that is 10x higher than the 99.5 %ile will be reset to 99.5 %ile
         cap_t2s = stats.scoreatpercentile(t2s_full.flatten(), 99.5, interpolation_method="lower")
         LGR.debug(f"Setting cap on T2* map at {utils.millisec2sec(cap_t2s):.5f}s")
-        t2s_full[t2s_full > cap_t2s * 10] = cap_t2s
+        t2s_full[t2s_full > cap_t2s * 10] = cap_t2s       
         io_generator.save_file(utils.millisec2sec(t2s_full), "t2star img")
         io_generator.save_file(s0_full, "s0 img")
+        
+        if sage:
+            cap_t2 = stats.scoreatpercentile(t2_full.flatten(), 99.5, interpolation_method="lower")
+            LGR.debug(f"Setting cap on T2 map at {utils.millisec2sec(cap_t2):.5f}s")
+            t2_full[t2_full > cap_t2 * 10] = cap_t2
+            io_generator.save_file(utils.millisec2sec(t2_full), "t2 img")
+            io_generator.save_file(delta_full, "delta img")
+            io_generator.save_file(s02_full, "s02 img")
 
         if verbose:
             io_generator.save_file(utils.millisec2sec(t2s_limited), "limited t2star img")
             io_generator.save_file(s0_limited, "limited s0 img")
+            if sage:
+                io_generator.save_file(utils.millisec2sec(t2_limited), "limited t2 img")
+                io_generator.save_file(delta_limited, "limited delta img")
+                io_generator.save_file(s02_limited, "limited s02 img")
 
-        # Calculate RMSE if S0 and T2* are fit
-        rmse_map, rmse_df = decay.rmse_of_fit_decay_ts(
-            data=catd,
-            tes=tes,
-            adaptive_mask=masksum_denoise,
-            t2s=t2s_limited,
-            s0=s0_limited,
-            fitmode="all",
-        )
+        if sage:
+            rmse_map, rmse_df = decay.rmse_of_fit_decay_ts_sage(
+                data=catd,
+                tes=tes,
+                adaptive_mask=masksum_denoise,
+                t2s=t2s_limited,
+                s0=s0_limited,
+                t2=t2_limited,       # Additional parameter for sage
+                s02=s02_limited,     # Additional parameter for sage
+                delta=delta_limited, # Additional parameter for sage
+                fitmode="all",
+            )
+
+        else:
+            rmse_map, rmse_df = decay.rmse_of_fit_decay_ts(
+                data=catd,
+                tes=tes,
+                adaptive_mask=masksum_denoise,
+                t2s=t2s_limited,
+                s0=s0_limited,
+                fitmode="all",
+            )
+
         io_generator.save_file(rmse_map, "rmse img")
         io_generator.add_df_to_file(rmse_df, "confounds tsv")
 
@@ -984,3 +1010,6 @@ def _main(argv=None):
 
 if __name__ == "__main__":
     _main()
+
+
+
