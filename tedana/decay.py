@@ -805,7 +805,7 @@ def rmse_of_fit_decay_ts_sage(
                 predicted_data[:, echo_num, :] = monoexponential_sage(
                     tes=tes[echo_num],
                     s0=s0_echo,
-                    t2star=t2s_echo,
+                    t2s=t2s_echo,
                     t2=t2_echo,
                     s02=s02_echo,
                     delta=delta_echo,

@@ -11,6 +11,18 @@
         "orig": "s0vG",
         "bidsv1.5.0": "S0map"
     },
+    "s02 img": {
+        "orig": "s02vG",
+        "bidsv1.5.0": "S02map"
+    },
+    "t2 img": {
+        "orig": "t2vG",
+        "bidsv1.5.0": "t2map"
+    },
+    "delta img": {
+        "orig": "deltavG",
+        "bidsv1.5.0": "deltamap"
+    },
     "combined img": {
         "orig": "ts_OC",
         "bidsv1.5.0": "desc-optcom_bold"
