@@ -259,7 +259,6 @@ def fit_loglinear(data_cat, echo_times, adaptive_mask, sage, report=True):
             echos_to_run = np.sort(np.unique(np.append(echos_to_run, 2)))
         echos_to_run = echos_to_run[echos_to_run >= 2]
 
-        #asymptomatic maps
         t2s_asc_maps = np.zeros([n_samp, len(echos_to_run)])
         s0_asc_maps = np.zeros([n_samp, len(echos_to_run)])
         echo_masks = np.zeros([n_samp, len(echos_to_run)], dtype=bool)

@@ -657,16 +657,22 @@ def tedana_workflow(
 
         # set a hard cap for the T2* map
         # anything that is 10x higher than the 99.5 %ile will be reset to 99.5 %ile
-        cap_t2s = stats.scoreatpercentile(t2s_full.flatten(), 99.5, interpolation_method="lower")
+        cap_t2s = stats.scoreatpercentile(t2s_full.flatten(), 95, interpolation_method="lower")
         LGR.debug(f"Setting cap on T2* map at {utils.millisec2sec(cap_t2s):.5f}s")
         t2s_full[t2s_full > cap_t2s * 10] = cap_t2s       
         io_generator.save_file(utils.millisec2sec(t2s_full), "t2star img")
         io_generator.save_file(s0_full, "s0 img")
         
         if sage:
-            cap_t2 = stats.scoreatpercentile(t2_full.flatten(), 99.5, interpolation_method="lower")
+            cap_t2 = stats.scoreatpercentile(t2_full.flatten(), 95, interpolation_method="lower")
             LGR.debug(f"Setting cap on T2 map at {utils.millisec2sec(cap_t2):.5f}s")
             t2_full[t2_full > cap_t2 * 10] = cap_t2
+            cap_s02 = stats.scoreatpercentile(s02_full.flatten(), 95, interpolation_method="lower")
+            LGR.debug(f"Setting cap on s02 map at {utils.millisec2sec(cap_s02):.5f}s")
+            s02_full[s02_full > cap_s02 * 10] = cap_t2
+            cap_delta = stats.scoreatpercentile(delta_full.flatten(), 95, interpolation_method="lower")
+            LGR.debug(f"Setting cap on delta map at {utils.millisec2sec(cap_delta):.5f}s")
+            delta_full[delta_full > cap_delta * 10] = cap_t2
             io_generator.save_file(utils.millisec2sec(t2_full), "t2 img")
             io_generator.save_file(delta_full, "delta img")
             io_generator.save_file(s02_full, "s02 img")
