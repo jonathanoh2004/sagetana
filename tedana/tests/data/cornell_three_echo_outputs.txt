@@ -1,5 +1,7 @@
 S0map.nii.gz
 T2starmap.nii.gz
+T2map.nii.gz
+Deltamap.nii.gz
 dataset_description.json
 desc-ICAAccepted_components.nii.gz
 desc-ICAAccepted_stat-z_components.nii.gz
@@ -107,6 +109,10 @@ figures/s0_brain.svg
 figures/s0_histogram.svg
 figures/t2star_brain.svg
 figures/t2star_histogram.svg
+figures/t2_brain.svg
+figures/t2_histogram.svg
+figures/delta_brain.svg
+figures/delta_histogram.svg
 references.bib
 report.txt
 tedana_report.html

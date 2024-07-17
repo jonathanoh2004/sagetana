@@ -1,5 +1,7 @@
 sub-01_S0map.nii.gz
 sub-01_T2starmap.nii.gz
+sub-01_T2map.nii.gz
+sub-01_Deltamap.nii.gz
 sub-01_dataset_description.json
 sub-01_desc-ICAAccepted_components.nii.gz
 sub-01_desc-ICAAccepted_stat-z_components.nii.gz
@@ -147,3 +149,7 @@ figures/sub-01_s0_brain.svg
 figures/sub-01_s0_histogram.svg
 figures/sub-01_t2star_brain.svg
 figures/sub-01_t2star_histogram.svg
+figures/sub-1_t2_brain.svg
+figures/sub-1_t2_histogram.svg
+figures/sub-1_delta_brain.svg
+figures/sub-1_delta_histogram.svg
