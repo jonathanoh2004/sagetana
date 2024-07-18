@@ -558,9 +558,15 @@ def plot_t2star_and_s0(
     """
     t2star_img = io_generator.get_name("t2star img")
     s0_img = io_generator.get_name("s0 img")
+    t2_img = io_generator.get_name("t2 img")
+    s02_img = io_generator.get_name("s02 img")
+    delta_img = io_generator.get_name("delta img")
     mask_img = io.new_nii_like(io_generator.reference_img, mask.astype(int))
     assert os.path.isfile(t2star_img), f"File {t2star_img} does not exist"
     assert os.path.isfile(s0_img), f"File {s0_img} does not exist"
+    assert os.path.isfile(s02_img), f"File {s02_img} does not exist"
+    assert os.path.isfile(delta_img), f"File {delta_img} does not exist"
+    assert os.path.isfile(t2_img), f"File {t2_img} does not exist"
 
     # Plot histograms
     t2star_data = masking.apply_mask(t2star_img, mask_img)
@@ -576,6 +582,19 @@ def plot_t2star_and_s0(
     fig.tight_layout()
     fig.savefig(os.path.join(io_generator.out_dir, "figures", t2star_histogram))
 
+    t2_data = masking.apply_mask(t2_img, mask_img)
+    t2_p02, t2_p98 = np.percentile(t2_data, [2, 98])
+    t2_histogram = f"{io_generator.prefix}t2_histogram.svg"
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.hist(t2_data[t2_data <= t2_p98], bins=100)
+    ax.set_xlim(0, t2_p98)
+    ax.set_title("T2", fontsize=20)
+    ax.set_ylabel("Count", fontsize=16)
+    ax.set_xlabel("Seconds\n(limited to 98th percentile)", fontsize=16)
+    fig.tight_layout()
+    fig.savefig(os.path.join(io_generator.out_dir, "figures", t2_histogram))
+
     s0_data = masking.apply_mask(s0_img, mask_img)
     s0_p02, s0_p98 = np.percentile(s0_data, [2, 98])
     s0_histogram = f"{io_generator.prefix}s0_histogram.svg"
@@ -588,6 +607,34 @@ def plot_t2star_and_s0(
     ax.set_xlabel("Arbitrary Units\n(limited to 98th percentile)", fontsize=16)
     fig.tight_layout()
     fig.savefig(os.path.join(io_generator.out_dir, "figures", s0_histogram))
+
+    # S0 Histogram
+    s02_data = masking.apply_mask(s02_img, mask_img)
+    s02_p02, s02_p98 = np.percentile(s02_data, [2, 98])
+    s02_histogram = f"{io_generator.prefix}s02_histogram.svg"
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.hist(s02_data[s02_data <= s02_p98], bins=100)
+    ax.set_xlim(0, s02_p98)
+    ax.set_title("S02", fontsize=20)
+    ax.set_ylabel("Count", fontsize=16)
+    ax.set_xlabel("Signal Intensity\n(limited to 98th percentile)", fontsize=16)
+    fig.tight_layout()
+    fig.savefig(os.path.join(io_generator.out_dir, "figures", s02_histogram))
+
+    # Delta Histogram
+    delta_data = masking.apply_mask(delta_img, mask_img)
+    delta_p02, delta_p98 = np.percentile(delta_data, [2, 98])
+    delta_histogram = f"{io_generator.prefix}delta_histogram.svg"
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.hist(delta_data[delta_data <= delta_p98], bins=100)
+    ax.set_xlim(0, delta_p98)
+    ax.set_title("Delta", fontsize=20)
+    ax.set_ylabel("Count", fontsize=16)
+    ax.set_xlabel("Delta Value\n(limited to 98th percentile)", fontsize=16)
+    fig.tight_layout()
+    fig.savefig(os.path.join(io_generator.out_dir, "figures", delta_histogram))
 
     # Plot T2* and S0 maps
     t2star_plot = f"{io_generator.prefix}t2star_brain.svg"
@@ -604,6 +651,20 @@ def plot_t2star_and_s0(
         output_file=os.path.join(io_generator.out_dir, "figures", t2star_plot),
     )
 
+    t2_plot = f"{io_generator.prefix}t2_brain.svg"
+    plotting.plot_stat_map(
+        t2_img,
+        bg_img=None,
+        display_mode="mosaic",
+        symmetric_cbar=False,
+        black_bg=True,
+        cmap="gray",
+        vmin=t2_p02,
+        vmax=t2_p98,
+        annotate=False,
+        output_file=os.path.join(io_generator.out_dir, "figures", t2_plot),
+    )
+
     s0_plot = f"{io_generator.prefix}s0_brain.svg"
     plotting.plot_stat_map(
         s0_img,
@@ -617,6 +678,37 @@ def plot_t2star_and_s0(
         annotate=False,
         output_file=os.path.join(io_generator.out_dir, "figures", s0_plot),
     )
+
+    # Delta Plot
+    delta_plot = f"{io_generator.prefix}delta_brain.svg"
+    plotting.plot_stat_map(
+        delta_img,
+        bg_img=None,
+        display_mode="mosaic",
+        symmetric_cbar=False,
+        black_bg=True,
+        cmap="gray",
+        vmin=delta_p02,
+        vmax=delta_p98,
+        annotate=False,
+        output_file=os.path.join(io_generator.out_dir, "figures", delta_plot),
+    )
+
+    # S02 Plot
+    s02_plot = f"{io_generator.prefix}s02_brain.svg"
+    plotting.plot_stat_map(
+        s02_img,
+        bg_img=None,
+        display_mode="mosaic",
+        symmetric_cbar=False,
+        black_bg=True,
+        cmap="gray",
+        vmin=s02_p02,
+        vmax=s02_p98,
+        annotate=False,
+        output_file=os.path.join(io_generator.out_dir, "figures", s02_plot),
+    )
+
 
 
 def plot_rmse(

@@ -155,6 +155,8 @@ def _update_template_bokeh(bokeh_id, info_table, about, prefix, references, boke
     t2_histogram = f"./figures/{prefix}t2_histogram.svg"
     delta_brain = f"./figures/{prefix}delta_brain.svg"
     delta_histogram = f"./figures/{prefix}delta_histogram.svg"
+    s02_brain = f"./figures/{prefix}s02_brain.svg"  # Added s02 plot
+    s02_histogram = f"./figures/{prefix}s02_histogram.svg"  # Added s02 histogram
     rmse_brain = f"./figures/{prefix}rmse_brain.svg"
     rmse_timeseries = f"./figures/{prefix}rmse_timeseries.svg"
 
@@ -182,8 +184,10 @@ def _update_template_bokeh(bokeh_id, info_table, about, prefix, references, boke
         s0Histogram=s0_histogram,
         t2BrainPlot=t2_brain,
         t2Histogram=t2_histogram,
-        deltaBrain=delta_brain,
+        deltaBrainPlot=delta_brain,
         deltaHistogram=delta_histogram,
+        s02BrainPlot=s02_brain,  
+        s02Histogram=s02_histogram,  
         rmseBrainPlot=rmse_brain,
         rmseTimeseries=rmse_timeseries,
         references=references,
