@@ -140,7 +140,7 @@ def _update_template_bokeh(bokeh_id, info_table, about, prefix, references, boke
     """
     resource_path = Path(__file__).resolve().parent.joinpath("data", "html")
 
-    # Initial carpet plot (default one)
+    # Initial carpet plot (default one) 
     initial_carpet = f"./figures/{prefix}carpet_optcom.svg"
 
     # Adaptive mask image

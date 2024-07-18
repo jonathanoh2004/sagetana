@@ -505,7 +505,7 @@ def pca_results(criteria, n_components, all_varex, io_generator):
         linestyles="dashed",
         label="KIC",
     )
-    # Vertical line depicting the optimal number of components given by MDL
+    # Vertical line depicting the optimal number of components given by MDL 
     plt.vlines(
         n_components[2],
         ymin=0,
