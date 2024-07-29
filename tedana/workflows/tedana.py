@@ -985,7 +985,12 @@ def tedana_workflow(
             io_generator=io_generator,
             png_cmap=png_cmap,
         )
-        reporting.static_figures.plot_t2star_and_s0(io_generator=io_generator, mask=mask_denoise)
+
+        if sage:
+            reporting.static_figures.plot_t2star_and_s0_sage(io_generator=io_generator, mask=mask_denoise)
+
+        else:
+            reporting.static_figures.plot_t2star_and_s0(io_generator=io_generator, mask=mask_denoise)
         if t2smap is None:
             reporting.static_figures.plot_rmse(
                 io_generator=io_generator,

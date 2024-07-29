@@ -15,7 +15,6 @@ from tedana import utils
 LGR = logging.getLogger("GENERAL")
 RepLGR = logging.getLogger("REPORT")
 
-
 def _apply_t2s_floor(t2s, echo_times):
     """Apply a floor to T2* values to prevent zero division errors during optimal combination.
 
@@ -76,7 +75,7 @@ def monoexponential(tes, s0, t2star):
 
 def monoexponential_sage(tes, s0, t2s, t2, s02, delta):
     
-    return s0 * np.exp(-tes / t2) * (1 - np.exp(-tes / s02)) + s02 * np.exp(-delta * tes)
+    return s0 * np.exp(-tes / t2s) + s02 * np.exp(-tes / t2) + delta
     
 
 def fit_monoexponential(data_cat, echo_times, adaptive_mask, report=True):
@@ -800,15 +799,14 @@ def rmse_of_fit_decay_ts_sage(
 
         predicted_data = np.full([use_vox.sum(), n_good_echoes, n_vols], np.nan, dtype=np.float32)
         for echo_num in range(n_good_echoes):
-            if t2 is not None and s02 is not None and delta is not None:
-                predicted_data[:, echo_num, :] = monoexponential_sage(
-                    tes=tes[echo_num],
-                    s0=s0_echo,
-                    t2s=t2s_echo,
-                    t2=t2_echo,
-                    s02=s02_echo,
-                    delta=delta_echo,
-                )
+            predicted_data[:, echo_num, :] = monoexponential_sage(
+                tes=tes[echo_num],
+                s0=s0_echo,
+                t2s=t2s_echo,
+                t2=t2_echo,
+                s02=s02_echo,
+                delta=delta_echo,
+            )
 
     rmse[use_vox, :] = np.sqrt(np.mean((data_echo - predicted_data) ** 2, axis=1))
 
