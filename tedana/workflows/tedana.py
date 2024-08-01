@@ -712,7 +712,10 @@ def tedana_workflow(
         io_generator.add_df_to_file(rmse_df, "confounds tsv")
 
     # optimally combine data
-    data_oc = combine.make_optcom(catd, tes, masksum_denoise, t2s=t2s_full, combmode=combmode)
+    if sage:
+        data_oc = combine.make_optcom_sage(catd, tes, masksum_denoise, t2s=t2s_full, combmode=combmode)
+    else:
+        data_oc = combine.make_optcom(catd, tes, masksum_denoise, t2s=t2s_full, combmode=combmode)
 
     if "gsr" in gscontrol:
         # regress out global signal

@@ -224,3 +224,225 @@ def make_optcom(data, tes, adaptive_mask, t2s=None, combmode="t2s"):
         report = False
 
     return combined
+
+
+def make_optcom_sage(data, tes, adaptive_mask, t2s=None, combmode="t2s"):
+    print("SSSSSSSSDANWOI NADOND OANWD OWNOI DANDOI NAWOID NAWOD NAOID NAWOID NAOWND OIAWND ")
+    print("SSSSSSSSDANWOI NADOND OANWD OWNOI DANDOI NAWOID NAWOD NAOID NAWOID NAOWND OIAWND ")
+    print("SSSSSSSSDANWOI NADOND OANWD OWNOI DANDOI NAWOID NAWOD NAOID NAWOID NAOWND OIAWND ")
+    print("SSSSSSSSDANWOI NADOND OANWD OWNOI DANDOI NAWOID NAWOD NAOID NAWOID NAOWND OIAWND ")
+    print("SSSSSSSSDANWOI NADOND OANWD OWNOI DANDOI NAWOID NAWOD NAOID NAWOID NAOWND OIAWND ")
+    print("SSSSSSSSDANWOI NADOND OANWD OWNOI DANDOI NAWOID NAWOD NAOID NAWOID NAOWND OIAWND ")
+    print("SSSSSSSSDANWOI NADOND OANWD OWNOI DANDOI NAWOID NAWOD NAOID NAWOID NAOWND OIAWND ")
+    print("SSSSSSSSDANWOI NADOND OANWD OWNOI DANDOI NAWOID NAWOD NAOID NAWOID NAOWND OIAWND ")
+    print("SSSSSSSSDANWOI NADOND OANWD OWNOI DANDOI NAWOID NAWOD NAOID NAWOID NAOWND OIAWND ")
+    print("SSSSSSSSDANWOI NADOND OANWD OWNOI DANDOI NAWOID NAWOD NAOID NAWOID NAOWND OIAWND ")
+    """
+    Optimally combine BOLD data across TEs.
+
+    Parameters
+    ----------
+    data : (S x E x T) numpy.ndarray
+        Concatenated BOLD data.
+    tes : (E,) numpy.ndarray
+        Array of TEs, in seconds.
+    adaptive_mask : (S,) numpy.ndarray
+        Array where each value indicates the number of echoes with good signal
+        for that voxel. This mask may be thresholded; for example, with values
+        less than 3 set to 0.
+        For more information on thresholding, see `make_adaptive_mask`.
+    t2s : (S [x T]) numpy.ndarray or None, optional
+        Estimated T2* values. Only required if combmode = 't2s'.
+        Default is None.
+    combmode : {'t2s', 'paid'}, optional
+        How to combine data. Either 'paid' or 't2s'. If 'paid', argument 't2s'
+        is not required. Default is 't2s'.
+
+    Returns
+    -------
+    combined : (S x T) numpy.ndarray
+        Optimally combined data.
+    """
+    if data.ndim != 3:
+        raise ValueError("Input data must be 3D (S x E x T)")
+
+    if len(tes) != data.shape[1]:
+        raise ValueError(
+            "Number of echos provided does not match second "
+            f"dimension of input data: {len(tes)} != {data.shape[1]}"
+        )
+
+    if adaptive_mask.ndim != 1:
+        raise ValueError("Mask is not 1D")
+    elif adaptive_mask.shape[0] != data.shape[0]:
+        raise ValueError(
+            "Mask and data do not have same number of "
+            f"voxels/samples: {adaptive_mask.shape[0]} != {data.shape[0]}"
+        )
+
+    if combmode not in ["t2s", "paid"]:
+        raise ValueError("Argument 'combmode' must be either 't2s' or 'paid'")
+    elif combmode == "t2s" and t2s is None:
+        raise ValueError("Argument 't2s' must be supplied if 'combmode' is set to 't2s'.")
+    elif combmode == "paid" and t2s is not None:
+        print("Warning: Argument 't2s' is not required if 'combmode' is 'paid'. "
+              "'t2s' array will not be used.")
+
+    if combmode == "paid":
+        print("Optimally combining data with parallel-acquired "
+              "inhomogeneity desensitized (PAID) method")
+    else:
+        if t2s.ndim == 1:
+            msg = "Optimally combining data with voxel-wise T2* estimates"
+        else:
+            msg = "Optimally combining data with voxel- and volume-wise T2* estimates"
+        print(msg)
+
+    echos_to_run = np.unique(adaptive_mask)
+    if 1 in echos_to_run:
+        echos_to_run = np.sort(np.unique(np.append(echos_to_run, 2)))
+    echos_to_run = echos_to_run[echos_to_run >= 2]
+
+    tes = np.array(tes)[np.newaxis, ...]  # (1 x E) array_like
+    combined = np.zeros((data.shape[0], data.shape[2]))
+    report = True
+    for i_echo, echo_num in enumerate(echos_to_run):
+        if echo_num == 2:
+            voxel_idx = np.where(np.logical_and(adaptive_mask > 0, adaptive_mask <= echo_num))[0]
+        else:
+            voxel_idx = np.where(adaptive_mask == echo_num)[0]
+
+        if combmode == "paid":
+            combined[voxel_idx, :] = _combine_paid_sage(
+                data[voxel_idx, :echo_num, :], tes[:, :echo_num]
+            )
+        else:
+            t2s_ = t2s[..., np.newaxis]  # add singleton dimension
+            combined[voxel_idx, :] = _combine_t2s_sage(
+                data[voxel_idx, :echo_num, :],
+                tes[:, :echo_num],
+                t2s_[voxel_idx, ...],
+                report=report,
+            )
+        report = False
+
+    return combined
+
+def _combine_t2s_sage(data, tes, t2s, report):
+    """
+    Combine data using T2* estimates.
+
+    Parameters
+    ----------
+    data : (V x E x T) numpy.ndarray
+        Voxel-wise BOLD data.
+    tes : (1 x E) numpy.ndarray
+        Echo times.
+    t2s : (V x 1) numpy.ndarray
+        Voxel-wise T2* estimates.
+    report : bool
+        Whether to report the process.
+
+    Returns
+    -------
+    combined : (V x T) numpy.ndarray
+        Combined data.
+    """
+    print("COMBINE T2S SAGE")
+    print("COMBINE T2S SAGE")
+    print("COMBINE T2S SAGE")
+    print("COMBINE T2S SAGE")
+    print("COMBINE T2S SAGE")
+    print("COMBINE T2S SAGE")
+    print("COMBINE T2S SAGE")
+    print("COMBINE T2S SAGE")
+
+    print("COMBINE T2S SAGE")
+    print("COMBINE T2S SAGE")
+    print("COMBINE T2S SAGE")
+    print("COMBINE T2S SAGE")
+    print("COMBINE T2S SAGE")
+    print("COMBINE T2S SAGE")
+    print("COMBINE T2S SAGE")
+    print("COMBINE T2S SAGE")
+    print("COMBINE T2S SAGE")
+    print("COMBINE T2S SAGE")
+    print("COMBINE T2S SAGE")
+    print("COMBINE T2S SAGE")
+    print("COMBINE T2S SAGE")
+    print("COMBINE T2S SAGE")
+
+    print("COMBINE T2S SAGE")
+    print("COMBINE T2S SAGE")
+    # Calculate weights based on T2* estimates
+    weights = tes * np.exp(-tes / t2s)
+    weights_sum = np.sum(weights, axis=1, keepdims=True)
+    normalized_weights = weights / weights_sum
+
+    # Combine data across echoes using the calculated weights
+    combined = np.sum(data * normalized_weights[:, :, np.newaxis], axis=1)
+
+    return combined
+def _combine_paid_sage(data, tes):
+    print("combine paid sage")
+    print("combine paid sage")
+    print("combine paid sage")
+    print("combine paid sage")
+    print("combine paid sage")
+    print("combine paid sage")
+    print("combine paid sage")
+    print("combine paid sage")
+    print("combine paid sage")
+    print("combine paid sage")
+    print("combine paid sage")
+    print("combine paid sage")
+    print("combine paid sage")
+    print("combine paid sage")
+    print("combine paid sage")
+    print("combine paid sage")
+    print("combine paid sage")
+    print("combine paid sage")
+    print("combine paid sage")
+    print("combine paid sage")
+    print("combine paid sage")
+    print("combine paid sage")
+    print("combine paid sage")
+    print("combine paid sage")
+    print("combine paid sage")
+    print("combine paid sage")
+    print("combine paid sage")
+    print("combine paid sage")
+    print("combine paid sage")
+    print("combine paid sage")
+    print("combine paid sage")
+    print("combine paid sage")
+    print("combine paid sage")
+    print("combine paid sage")
+    
+    """
+    Combine data using the PAID method.
+
+    Parameters
+    ----------
+    data : (V x E x T) numpy.ndarray
+        Voxel-wise BOLD data.
+    tes : (1 x E) numpy.ndarray
+        Echo times.
+
+    Returns
+    -------
+    combined : (V x T) numpy.ndarray
+        Combined data.
+    """
+    # Calculate SNR for each echo
+    snr = np.mean(data, axis=2) / np.std(data, axis=2)
+    
+    # Calculate weights based on SNR
+    weights = snr / np.sum(snr, axis=1, keepdims=True)
+    
+    # Combine data across echoes using the calculated weights
+    combined = np.sum(data * weights[:, :, np.newaxis], axis=1)
+    
+    return combined
+
+

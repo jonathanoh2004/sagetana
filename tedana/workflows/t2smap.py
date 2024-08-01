@@ -63,6 +63,15 @@ def _get_parser():
         default=".",
     )
     optional.add_argument(
+        "--sage",
+        dest="sage",
+        action="store_true",
+        help=(
+            "Keeps track of whether or not processes should be ran through sage or not"
+        ),
+        default=False,
+    )
+    optional.add_argument(
         "--mask",
         dest="mask",
         metavar="FILE",
@@ -160,6 +169,7 @@ def t2smap_workflow(
     data,
     tes,
     out_dir=".",
+    sage=False,
     mask=None,
     prefix="",
     convention="bids",
@@ -330,7 +340,10 @@ def t2smap_workflow(
 
     LGR.info("Computing optimal combination")
     # optimally combine data
-    data_oc = combine.make_optcom(catd, tes, masksum, t2s=t2s_full, combmode=combmode)
+    if sage:
+        data_oc = combine.make_optcom_sage(catd, tes, masksum, t2s=t2s_full, combmode=combmode)
+    else:
+        data_oc = combine.make_optcom(catd, tes, masksum, t2s=t2s_full, combmode=combmode)
 
     # clean up numerical errors
     for arr in (data_oc, s0_full, t2s_full):
